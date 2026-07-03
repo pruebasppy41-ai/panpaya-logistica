@@ -22,7 +22,7 @@ export default function HomePage() {
         </Link>
 
         <Link
-          href="/logistica"
+          href="/login-logistica"
           className="flex items-center justify-center gap-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 p-4 rounded-xl font-semibold shadow-lg transition active:scale-95 text-center"
         >
           📁 Carga de Logística
