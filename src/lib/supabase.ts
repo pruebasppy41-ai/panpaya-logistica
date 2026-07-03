@@ -1,6 +1,29 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+/** Corrige el typo frecuente blwzyrk → blwzyk en despliegues Vercel */
+function resolveSupabaseUrl(): string {
+  const env = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const fallback = 'https://eeikipgrdyctovblwzyk.supabase.co';
+  if (!env) return fallback;
+  if (env.includes('blwzyrk')) return env.replace('blwzyrk', 'blwzyk');
+  return env;
+}
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabaseUrl = resolveSupabaseUrl();
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? '';
+
+export const supabaseConfigOk = Boolean(supabaseUrl && supabaseAnonKey);
+
+export const supabase: SupabaseClient = createClient(
+  supabaseUrl,
+  supabaseAnonKey || 'missing-anon-key',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  }
+);
+
+export { supabaseUrl };

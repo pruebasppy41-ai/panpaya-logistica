@@ -3,6 +3,34 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 
+import { etiquetaZonas, filtroOrPorNombresZona } from '@/lib/zonas';
+
+interface PerfilAsesor {
+  nombres_apellidos: string;
+  zona: string | null;
+  asesor_zonas: {
+    codigo_zona: string;
+    zonas_distribucion: { codigo: string; nombre: string };
+  }[];
+}
+
+function nombresZonasDelPerfil(perfil: PerfilAsesor): string[] {
+  const desdeRelacion = perfil.asesor_zonas
+    ?.map((az) => az.zonas_distribucion?.nombre)
+    .filter((n): n is string => Boolean(n));
+
+  if (desdeRelacion && desdeRelacion.length > 0) {
+    return Array.from(new Set(desdeRelacion));
+  }
+  if (perfil.zona) return [perfil.zona];
+  return [];
+}
+
+function codigosZonasDelPerfil(perfil: PerfilAsesor): string[] {
+  const codigos = perfil.asesor_zonas?.map((az) => az.codigo_zona).filter(Boolean);
+  return codigos?.length ? codigos : [];
+}
+
 interface Pedido {
   id: string;
   codigo_cliente: string;
@@ -21,9 +49,8 @@ interface Pedido {
 }
 
 export default function DashboardAsesorHistorico() {
-  const [perfilAsesor, setPerfilAsesor] = useState<{ nombres_apellidos: string; zona: string } | null>(
-    null
-  );
+  const [perfilAsesor, setPerfilAsesor] = useState<PerfilAsesor | null>(null);
+  const [nombresZonasActivas, setNombresZonasActivas] = useState<string[]>([]);
 
   const [fechaSeleccionada, setFechaSeleccionada] = useState(
     new Date().toISOString().split('T')[0]
@@ -39,18 +66,30 @@ export default function DashboardAsesorHistorico() {
   const [loadingBusqueda, setLoadingBusqueda] = useState(false);
   const [modalFoto, setModalFoto] = useState<string | null>(null);
 
-  const cargarPedidosPorZonaYFecha = useCallback(async (zonaAsesor: string, fechaTarget: string) => {
+  const cargarPedidosPorZonasYFecha = useCallback(async (nombresZona: string[], fechaTarget: string) => {
     setLoadingPedidos(true);
 
-    const { data } = await supabase
+    if (nombresZona.length === 0) {
+      setPedidosDelDia([]);
+      setLoadingPedidos(false);
+      return;
+    }
+
+    let query = supabase
       .from('pedidos')
       .select(`
         id, codigo_cliente, nombre_cliente, direccion, notas, estado, foto_url, entregado_at,
         rutas!inner ( nombre_zona, placa, conductor, fecha )
       `)
-      .eq('rutas.fecha', fechaTarget)
-      .ilike('rutas.nombre_zona', `%${zonaAsesor}%`);
+      .eq('rutas.fecha', fechaTarget);
 
+    if (nombresZona.length === 1) {
+      query = query.ilike('rutas.nombre_zona', `%${nombresZona[0]}%`);
+    } else {
+      query = query.or(filtroOrPorNombresZona(nombresZona));
+    }
+
+    const { data } = await query;
     setPedidosDelDia((data as unknown as Pedido[]) ?? []);
     setLoadingPedidos(false);
   }, []);
@@ -66,29 +105,35 @@ export default function DashboardAsesorHistorico() {
       if (user) {
         const { data: perfil } = await supabase
           .from('asesores')
-          .select('nombres_apellidos, zona')
+          .select(`
+            nombres_apellidos, zona,
+            asesor_zonas ( codigo_zona, zonas_distribucion ( codigo, nombre ) )
+          `)
           .eq('id', user.id)
           .single();
 
         if (perfil) {
-          setPerfilAsesor(perfil);
+          const perfilTyped = perfil as unknown as PerfilAsesor;
+          const nombres = nombresZonasDelPerfil(perfilTyped);
+          setPerfilAsesor(perfilTyped);
+          setNombresZonasActivas(nombres);
           const hoy = new Date().toISOString().split('T')[0];
-          await cargarPedidosPorZonaYFecha(perfil.zona, hoy);
+          await cargarPedidosPorZonasYFecha(nombres, hoy);
         }
       }
       setLoadingPerfil(false);
     };
 
     obtenerPerfilInicial();
-  }, [cargarPedidosPorZonaYFecha]);
+  }, [cargarPedidosPorZonasYFecha]);
 
   useEffect(() => {
-    if (perfilAsesor) {
-      cargarPedidosPorZonaYFecha(perfilAsesor.zona, fechaSeleccionada);
+    if (nombresZonasActivas.length > 0) {
+      cargarPedidosPorZonasYFecha(nombresZonasActivas, fechaSeleccionada);
     }
     setRealizoBusqueda(false);
     setPedidoBuscado(null);
-  }, [fechaSeleccionada, perfilAsesor, cargarPedidosPorZonaYFecha]);
+  }, [fechaSeleccionada, nombresZonasActivas, cargarPedidosPorZonasYFecha]);
 
   const handleBuscarCodigoHistorico = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,9 +176,27 @@ export default function DashboardAsesorHistorico() {
               Asesor: {perfilAsesor?.nombres_apellidos}
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">
-              Zona de Supervisión:{' '}
-              <span className="text-slate-200 font-bold uppercase">{perfilAsesor?.zona}</span>
+              Zonas de Supervisión:{' '}
+              <span className="text-slate-200 font-bold">
+                {perfilAsesor
+                  ? etiquetaZonas(codigosZonasDelPerfil(perfilAsesor)) ||
+                    nombresZonasActivas.join(' · ') ||
+                    'Sin asignar'
+                  : '—'}
+              </span>
             </p>
+            {nombresZonasActivas.length > 1 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {nombresZonasActivas.map((z) => (
+                  <span
+                    key={z}
+                    className="text-[10px] bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-full text-slate-300"
+                  >
+                    {z}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="bg-slate-900 border border-slate-800 px-4 py-2.5 rounded-xl flex items-center gap-3 w-full md:w-auto">
@@ -230,7 +293,7 @@ export default function DashboardAsesorHistorico() {
         <div className="space-y-4">
           <div>
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300">
-              Registros de Zona: {perfilAsesor?.zona}
+              Registros de sus zonas
             </h2>
             <p className="text-xs text-slate-500">
               Mostrando la programación cargada para el día{' '}
@@ -286,8 +349,8 @@ export default function DashboardAsesorHistorico() {
             </div>
           ) : (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-xs text-slate-500 italic">
-              📭 No hay registros logísticos cargados para la zona &quot;{perfilAsesor?.zona}&quot; en
-              la fecha seleccionada ({fechaSeleccionada}).
+              📭 No hay registros logísticos cargados para sus zonas en la fecha seleccionada (
+              {fechaSeleccionada}).
             </div>
           )}
         </div>
