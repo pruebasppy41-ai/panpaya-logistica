@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, supabaseConfigOk } from '@/lib/supabase';
+import VolverInicio from '@/components/VolverInicio';
 
 function CampoPassword({
   label,
@@ -146,7 +147,10 @@ export default function AuthLogistica() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-8 text-white font-sans">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-950 px-4 py-8 text-white font-sans">
+      <div className="absolute top-4 left-4 z-10">
+        <VolverInicio />
+      </div>
       <div className="w-full max-w-lg space-y-6 rounded-2xl border border-amber-500/20 bg-slate-900/50 p-6 sm:p-8 shadow-2xl backdrop-blur-sm">
         <div className="text-center">
           <span className="text-4xl">📁</span>

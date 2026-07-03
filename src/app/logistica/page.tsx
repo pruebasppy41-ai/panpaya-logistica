@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { uploadExcel } from '@/lib/api';
+import VolverInicio from '@/components/VolverInicio';
 
 export default function CargaLogisticaProtegida() {
   const router = useRouter();
@@ -83,7 +84,10 @@ export default function CargaLogisticaProtegida() {
   if (!esAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 font-sans flex items-center justify-center">
+    <div className="relative min-h-screen bg-slate-950 text-white p-4 md:p-8 font-sans flex items-center justify-center">
+      <div className="absolute top-4 left-4 z-10">
+        <VolverInicio />
+      </div>
       <div className="w-full max-w-xl bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-2xl space-y-6">
         <div className="text-center border-b border-slate-800 pb-4">
           <span className="text-3xl">📁</span>

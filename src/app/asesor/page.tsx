@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 
 import { etiquetaZonas, filtroOrPorNombresZona } from '@/lib/zonas';
+import VolverInicio from '@/components/VolverInicio';
 
 interface PerfilAsesor {
   nombres_apellidos: string;
@@ -165,8 +166,11 @@ export default function DashboardAsesorHistorico() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-4 md:p-8 font-sans">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="relative min-h-screen bg-slate-950 text-white p-4 md:p-8 font-sans">
+      <div className="absolute top-4 left-4 z-10">
+        <VolverInicio />
+      </div>
+      <div className="max-w-6xl mx-auto space-y-8 pt-12">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-900 pb-5 gap-4">
           <div>
             <p className="text-xs text-blue-400 font-mono uppercase tracking-widest font-bold">

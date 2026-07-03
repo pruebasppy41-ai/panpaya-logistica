@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import VolverInicio from '@/components/VolverInicio';
 
 interface PedidoResultado {
   id: string;
@@ -67,7 +68,10 @@ export default function ConsultaAsesor() {
   const estadoVisible = pedidoEncontrado ? etiquetaEstado(pedidoEncontrado.estado) : '';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white p-6 font-sans flex flex-col items-center justify-center">
+    <div className="relative min-h-screen bg-slate-950 text-white p-6 font-sans flex flex-col items-center justify-center">
+      <div className="absolute top-4 left-4 z-10">
+        <VolverInicio />
+      </div>
       <div className="w-full max-w-2xl space-y-6">
         <div className="text-center space-y-2">
           <span className="text-3xl">🍞</span>

@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
+import { ZONAS_DISTRIBUCION } from '@/lib/zonas';
+import VolverInicio from '@/components/VolverInicio';
 
 interface PedidoRuta {
   id: string;
@@ -14,10 +16,9 @@ interface PedidoRuta {
   rutas: {
     placa: string;
     fecha: string;
+    nombre_zona: string;
   };
 }
-
-const ZONAS_CONTINGENCIA = ['SABANA', 'CENTRO', 'NORTE', 'SUR', 'OCCIDENTE', 'REVENTA'];
 
 export default function ConductorContingenciaPOD() {
   const [placas, setPlacas] = useState<string[]>([]);
@@ -30,6 +31,18 @@ export default function ConductorContingenciaPOD() {
   const [pedidos, setPedidos] = useState<PedidoRuta[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const [filtroZonaManual, setFiltroZonaManual] = useState('');
+
+  const zonasManualFiltradas = useMemo(() => {
+    const q = filtroZonaManual.trim().toLowerCase();
+    if (!q) return ZONAS_DISTRIBUCION;
+    return ZONAS_DISTRIBUCION.filter(
+      (z) => z.codigo.toLowerCase().includes(q) || z.nombre.toLowerCase().includes(q)
+    );
+  }, [filtroZonaManual]);
+
+  const nombreZonaManual =
+    ZONAS_DISTRIBUCION.find((z) => z.codigo === zonaManualInput)?.nombre ?? '';
   const [pedidoParaEvidencia, setPedidoParaEvidencia] = useState<PedidoRuta | null>(null);
   const [subiendoPOD, setSubiendoPOD] = useState(false);
 
@@ -63,18 +76,24 @@ export default function ConductorContingenciaPOD() {
         setPlacaSeleccionada(placaConsulta);
       }
 
-      const { data } = await supabase
+      let query = supabase
         .from('pedidos')
         .select(
-          'id, codigo_cliente, nombre_cliente, direccion, notas, estado, foto_url, rutas!inner(placa, fecha)'
+          'id, codigo_cliente, nombre_cliente, direccion, notas, estado, foto_url, rutas!inner(placa, fecha, nombre_zona)'
         )
         .eq('rutas.placa', placaConsulta)
         .eq('rutas.fecha', hoy);
 
+      if (esManual && nombreZonaManual) {
+        query = query.ilike('rutas.nombre_zona', `%${nombreZonaManual}%`);
+      }
+
+      const { data } = await query;
+
       setPedidos((data as unknown as PedidoRuta[]) ?? []);
       setLoading(false);
     },
-    [hoy, placaManualInput, zonaManualInput]
+    [hoy, placaManualInput, zonaManualInput, nombreZonaManual]
   );
 
   const handleSelectorPlaca = (valor: string) => {
@@ -86,6 +105,7 @@ export default function ConductorContingenciaPOD() {
       setEsPlacaManual(false);
       setPlacaManualInput('');
       setZonaManualInput('');
+      setFiltroZonaManual('');
       if (valor) consultarHojaRuta(valor, false);
     }
   };
@@ -135,12 +155,16 @@ export default function ConductorContingenciaPOD() {
     setEsPlacaManual(false);
     setPlacaManualInput('');
     setZonaManualInput('');
+    setFiltroZonaManual('');
     setPedidos([]);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans p-4 max-w-md mx-auto flex flex-col justify-between">
-      <div className="space-y-6">
+    <div className="min-h-screen bg-slate-950 text-white font-sans p-4 max-w-md mx-auto flex flex-col justify-between relative">
+      <div className="absolute top-4 left-4 z-10">
+        <VolverInicio />
+      </div>
+      <div className="space-y-6 pt-12">
         <div className="text-center border-b border-slate-900 pb-4">
           <span className="text-3xl">🚛</span>
           <h1 className="text-lg font-bold tracking-wider mt-1">LEGALIZACIÓN DE DESPACHOS</h1>
@@ -194,18 +218,27 @@ export default function ConductorContingenciaPOD() {
                   <label className="block text-[11px] font-semibold text-amber-400 mb-1 uppercase tracking-wider">
                     Zona de Operación Obligatoria:
                   </label>
+                  <input
+                    type="search"
+                    placeholder="Buscar zona..."
+                    className="w-full mb-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-amber-500"
+                    value={filtroZonaManual}
+                    onChange={(e) => setFiltroZonaManual(e.target.value)}
+                  />
                   <select
                     required
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white font-bold outline-none focus:border-amber-500 cursor-pointer"
+                    size={6}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white font-medium outline-none focus:border-amber-500 cursor-pointer max-h-40 overflow-y-auto"
+                    style={{ WebkitOverflowScrolling: 'touch' }}
                     value={zonaManualInput}
                     onChange={(e) => setZonaManualInput(e.target.value)}
                   >
                     <option value="" disabled>
                       -- Seleccione Zona --
                     </option>
-                    {ZONAS_CONTINGENCIA.map((z) => (
-                      <option key={z} value={z}>
-                        {z}
+                    {zonasManualFiltradas.map((z) => (
+                      <option key={z.codigo} value={z.codigo}>
+                        {z.codigo} — {z.nombre}
                       </option>
                     ))}
                   </select>
@@ -228,9 +261,9 @@ export default function ConductorContingenciaPOD() {
                 <span className="text-xs font-bold font-mono text-emerald-400">
                   VEHÍCULO: {placaSeleccionada}
                 </span>
-                {esPlacaManual && (
+                {esPlacaManual && nombreZonaManual && (
                   <span className="text-[10px] text-amber-400 font-bold uppercase">
-                    Modo Contingencia ({zonaManualInput})
+                    Modo Contingencia ({nombreZonaManual})
                   </span>
                 )}
               </div>

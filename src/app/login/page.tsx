@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, supabaseConfigOk } from '@/lib/supabase';
 import { ZONAS_DISTRIBUCION } from '@/lib/zonas';
+import VolverInicio from '@/components/VolverInicio';
 
 function CampoPassword({
   label,
@@ -177,7 +178,10 @@ export default function AuthAsesores() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-3 py-6 sm:px-4 sm:py-8 text-white font-sans">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-950 px-3 py-6 sm:px-4 sm:py-8 text-white font-sans">
+      <div className="absolute top-4 left-4 z-10">
+        <VolverInicio />
+      </div>
       <div className="w-full max-w-lg space-y-5 rounded-2xl border border-slate-800 bg-slate-900/50 p-5 sm:p-8 shadow-2xl">
         <div className="text-center">
           <span className="text-4xl">🍞</span>
