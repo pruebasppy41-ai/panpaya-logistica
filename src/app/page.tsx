@@ -10,7 +10,7 @@ export default function HomePage() {
 
       <div className="flex flex-col sm:flex-row gap-4">
         <Link
-          href="/asesor"
+          href="/login"
           className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-semibold shadow-lg transition text-center"
         >
           📊 Panel de Asesores
