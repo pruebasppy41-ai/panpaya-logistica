@@ -1,0 +1,11 @@
+.env
+.env.local
+.env.*.local
+backend/.env
+web/.env.local
+node_modules/
+__pycache__/
+.next/
+*.pyc
+.venv/
+package-lock.json

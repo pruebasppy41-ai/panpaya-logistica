@@ -1,0 +1,31 @@
+---
+description: Usar mnpm como gestor de paquetes en todo el proyecto frontend
+alwaysApply: true
+---
+
+# Gestor de paquetes: mnpm
+
+En este proyecto **siempre** usa `mnpm`, nunca `npm` directamente.
+
+`mnpm` es un wrapper local (`web/mnpm.cmd`) que ejecuta `npm` por debajo.
+
+## Requisito previo
+
+Instalar **Node.js LTS** (incluye npm): https://nodejs.org
+
+## Comandos (desde la carpeta `web/`)
+
+```bash
+.\mnpm.cmd install
+.\mnpm.cmd run dev
+.\mnpm.cmd run build
+.\mnpm.cmd add <paquete>
+```
+
+En PowerShell también puedes usar: `.\mnpm.ps1 install`
+
+## Si `mnpm` no se reconoce
+
+1. Asegúrate de estar en la carpeta `web/`
+2. Usa `.\mnpm.cmd` (con `.\` al inicio en Windows)
+3. Verifica Node: `node --version`

@@ -1,0 +1,280 @@
+.page {
+  min-height: 100vh;
+  padding: 1.5rem 2rem 3rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.eyebrow {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.headerActions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.dateInput {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 1rem;
+  background: var(--accent);
+  color: white;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.uploadBtn:hover {
+  filter: brightness(1.05);
+}
+
+.error {
+  background: var(--danger-soft);
+  color: var(--danger);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.statCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.statLabel {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.statCard strong {
+  font-size: 1.5rem;
+}
+
+.statSuccess {
+  color: var(--success);
+}
+
+.statWarning {
+  color: var(--warning);
+}
+
+.loading,
+.empty {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--muted);
+}
+
+.empty p + p {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sidebar {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  position: sticky;
+  top: 1rem;
+}
+
+.sidebar h2 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 0.75rem;
+}
+
+.sidebar ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.zonaBtn,
+.zonaActiva {
+  width: 100%;
+  text-align: left;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.zonaBtn:hover {
+  background: var(--bg);
+}
+
+.zonaActiva {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.zonaNombre {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.zonaMeta,
+.zonaProgress {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.main {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  overflow-x: auto;
+}
+
+.rutaHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.rutaHeader h2 {
+  font-size: 1.25rem;
+}
+
+.rutaMeta {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.search {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  min-width: 240px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table th {
+  text-align: left;
+  padding: 0.6rem 0.5rem;
+  border-bottom: 2px solid var(--border);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.table td {
+  padding: 0.65rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.notas {
+  max-width: 180px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.estadoPendiente {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.estadoCamino {
+  background: #e8f0fe;
+  color: #1a56db;
+}
+
+.estadoEntregado {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.estadoNoEntregado {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.fotoLink {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
