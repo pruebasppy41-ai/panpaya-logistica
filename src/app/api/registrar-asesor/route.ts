@@ -62,6 +62,7 @@ export async function POST(request: Request) {
       codigo_opcional: codigo?.trim() || null,
       correo_electronico: email,
       zona: nombresZona.join(' | '),
+      rol: 'asesor',
     });
 
     if (perfilError) {
