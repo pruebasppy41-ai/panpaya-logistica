@@ -1,23 +1,29 @@
-import Link from "next/link";
+import Link from 'next/link';
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-900 text-white p-6">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 text-white p-6 font-sans">
       <h1 className="text-3xl font-bold mb-2 tracking-wider">PAN PA YA</h1>
-      <p className="text-slate-400 mb-8 text-sm">
-        Seleccione el módulo del ecosistema logístico
-      </p>
+      <p className="text-slate-400 mb-8 text-sm">Seleccione el módulo del ecosistema logístico</p>
 
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl w-full px-4">
         <Link
           href="/login"
-          className="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-xl font-semibold shadow-lg transition text-center"
+          className="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 p-4 rounded-xl font-semibold shadow-lg shadow-blue-600/10 transition active:scale-95 text-center"
         >
           📊 Panel de Asesores
         </Link>
+
+        <Link
+          href="/conductor"
+          className="flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 p-4 rounded-xl font-semibold shadow-lg shadow-emerald-600/10 transition active:scale-95 text-center"
+        >
+          🚛 Legalizar POD (Conductores)
+        </Link>
+
         <Link
           href="/logistica"
-          className="bg-slate-800 hover:bg-slate-700 border border-slate-700 px-6 py-3 rounded-xl font-semibold shadow-lg transition text-center"
+          className="flex items-center justify-center gap-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 p-4 rounded-xl font-semibold shadow-lg transition active:scale-95 text-center"
         >
           📁 Carga de Logística
         </Link>
