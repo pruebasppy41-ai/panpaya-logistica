@@ -60,16 +60,15 @@ uvicorn app.main:app --reload --port 8000
 ### 3. Panel web (Vercel)
 
 ```bash
-cd web
 .\mnpm.cmd install
 cp .env.example .env.local
 .\mnpm.cmd run dev
 ```
 
 Variables en Vercel:
-- `NEXT_PUBLIC_API_URL` → URL del backend (Railway, Render, etc.)
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (API `/api/procesar-excel`)
 
 ### 4. App móvil (integración)
 

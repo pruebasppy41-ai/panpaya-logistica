@@ -7,13 +7,13 @@ alwaysApply: true
 
 En este proyecto **siempre** usa `mnpm`, nunca `npm` directamente.
 
-`mnpm` es un wrapper local (`web/mnpm.cmd`) que ejecuta `npm` por debajo.
+`mnpm` es un wrapper local (`mnpm.cmd`) que ejecuta `npm` por debajo.
 
 ## Requisito previo
 
 Instalar **Node.js LTS** (incluye npm): https://nodejs.org
 
-## Comandos (desde la carpeta `web/`)
+## Comandos (desde la raíz del repositorio)
 
 ```bash
 .\mnpm.cmd install
@@ -26,6 +26,6 @@ En PowerShell también puedes usar: `.\mnpm.ps1 install`
 
 ## Si `mnpm` no se reconoce
 
-1. Asegúrate de estar en la carpeta `web/`
+1. Asegúrate de estar en la raíz del proyecto (`Multipan`)
 2. Usa `.\mnpm.cmd` (con `.\` al inicio en Windows)
 3. Verifica Node: `node --version`

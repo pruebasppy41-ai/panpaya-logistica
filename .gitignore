@@ -2,7 +2,7 @@
 .env.local
 .env.*.local
 backend/.env
-web/.env.local
+web/
 node_modules/
 __pycache__/
 .next/
