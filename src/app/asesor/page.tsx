@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface Pedido {
@@ -16,12 +16,17 @@ interface Pedido {
     nombre_zona: string;
     placa: string;
     conductor: string;
+    fecha: string;
   };
 }
 
-export default function DashboardAsesor() {
+export default function DashboardAsesorHistorico() {
   const [perfilAsesor, setPerfilAsesor] = useState<{ nombres_apellidos: string; zona: string } | null>(
     null
+  );
+
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(
+    new Date().toISOString().split('T')[0]
   );
 
   const [pedidosDelDia, setPedidosDelDia] = useState<Pedido[]>([]);
@@ -34,63 +39,24 @@ export default function DashboardAsesor() {
   const [loadingBusqueda, setLoadingBusqueda] = useState(false);
   const [modalFoto, setModalFoto] = useState<string | null>(null);
 
-  const hoy = new Date().toISOString().split('T')[0];
-  const perfilRef = useRef(perfilAsesor);
-  const codigoRef = useRef(codigoBusqueda);
+  const cargarPedidosPorZonaYFecha = useCallback(async (zonaAsesor: string, fechaTarget: string) => {
+    setLoadingPedidos(true);
+
+    const { data } = await supabase
+      .from('pedidos')
+      .select(`
+        id, codigo_cliente, nombre_cliente, direccion, notas, estado, foto_url, entregado_at,
+        rutas!inner ( nombre_zona, placa, conductor, fecha )
+      `)
+      .eq('rutas.fecha', fechaTarget)
+      .ilike('rutas.nombre_zona', `%${zonaAsesor}%`);
+
+    setPedidosDelDia((data as unknown as Pedido[]) ?? []);
+    setLoadingPedidos(false);
+  }, []);
 
   useEffect(() => {
-    perfilRef.current = perfilAsesor;
-  }, [perfilAsesor]);
-
-  useEffect(() => {
-    codigoRef.current = codigoBusqueda;
-  }, [codigoBusqueda]);
-
-  const cargarPedidosPorZona = useCallback(
-    async (zonaAsesor: string) => {
-      setLoadingPedidos(true);
-
-      const { data } = await supabase
-        .from('pedidos')
-        .select(`
-          id, codigo_cliente, nombre_cliente, direccion, notas, estado, foto_url, entregado_at,
-          rutas!inner ( nombre_zona, placa, conductor, fecha )
-        `)
-        .eq('rutas.fecha', hoy)
-        .ilike('rutas.nombre_zona', `%${zonaAsesor}%`);
-
-      setPedidosDelDia((data as unknown as Pedido[]) ?? []);
-      setLoadingPedidos(false);
-    },
-    [hoy]
-  );
-
-  const ejecutarBusquedaDirecta = useCallback(
-    async (codigo?: string) => {
-      const termino = (codigo ?? codigoRef.current).trim();
-      if (!termino) return;
-
-      setLoadingBusqueda(true);
-      setRealizoBusqueda(true);
-
-      const { data } = await supabase
-        .from('pedidos')
-        .select(`
-          id, codigo_cliente, nombre_cliente, direccion, notas, estado, foto_url, entregado_at,
-          rutas!inner ( nombre_zona, placa, conductor, fecha )
-        `)
-        .eq('codigo_cliente', termino)
-        .eq('rutas.fecha', hoy)
-        .maybeSingle();
-
-      setPedidoBuscado(data ? (data as unknown as Pedido) : null);
-      setLoadingBusqueda(false);
-    },
-    [hoy]
-  );
-
-  useEffect(() => {
-    const obtenerPerfilYPedidos = async () => {
+    const obtenerPerfilInicial = async () => {
       setLoadingPerfil(true);
 
       const {
@@ -106,36 +72,49 @@ export default function DashboardAsesor() {
 
         if (perfil) {
           setPerfilAsesor(perfil);
-          await cargarPedidosPorZona(perfil.zona);
+          const hoy = new Date().toISOString().split('T')[0];
+          await cargarPedidosPorZonaYFecha(perfil.zona, hoy);
         }
       }
       setLoadingPerfil(false);
     };
 
-    obtenerPerfilYPedidos();
+    obtenerPerfilInicial();
+  }, [cargarPedidosPorZonaYFecha]);
 
-    const canalRealtime = supabase
-      .channel('cambios-logistica-asesor')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => {
-        if (perfilRef.current) cargarPedidosPorZona(perfilRef.current.zona);
-        if (codigoRef.current.trim()) ejecutarBusquedaDirecta();
-      })
-      .subscribe();
+  useEffect(() => {
+    if (perfilAsesor) {
+      cargarPedidosPorZonaYFecha(perfilAsesor.zona, fechaSeleccionada);
+    }
+    setRealizoBusqueda(false);
+    setPedidoBuscado(null);
+  }, [fechaSeleccionada, perfilAsesor, cargarPedidosPorZonaYFecha]);
 
-    return () => {
-      supabase.removeChannel(canalRealtime);
-    };
-  }, [cargarPedidosPorZona, ejecutarBusquedaDirecta]);
-
-  const handleBuscarCodigo = async (e: React.FormEvent) => {
+  const handleBuscarCodigoHistorico = async (e: React.FormEvent) => {
     e.preventDefault();
-    await ejecutarBusquedaDirecta(codigoBusqueda);
+    if (!codigoBusqueda.trim()) return;
+
+    setLoadingBusqueda(true);
+    setRealizoBusqueda(true);
+
+    const { data } = await supabase
+      .from('pedidos')
+      .select(`
+        id, codigo_cliente, nombre_cliente, direccion, notas, estado, foto_url, entregado_at,
+        rutas!inner ( nombre_zona, placa, conductor, fecha )
+      `)
+      .eq('codigo_cliente', codigoBusqueda.trim())
+      .eq('rutas.fecha', fechaSeleccionada)
+      .maybeSingle();
+
+    setPedidoBuscado(data ? (data as unknown as Pedido) : null);
+    setLoadingBusqueda(false);
   };
 
   if (loadingPerfil) {
     return (
       <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center font-mono text-xs">
-        Validando credenciales logísticas de asesor...
+        Cargando credenciales históricas...
       </div>
     );
   }
@@ -146,37 +125,47 @@ export default function DashboardAsesor() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-900 pb-5 gap-4">
           <div>
             <p className="text-xs text-blue-400 font-mono uppercase tracking-widest font-bold">
-              Bienvenido al Sistema
+              Panel de Auditoría
             </p>
             <h1 className="text-xl font-bold tracking-tight text-white mt-1">
               Asesor: {perfilAsesor?.nombres_apellidos}
             </h1>
             <p className="text-xs text-slate-400 mt-0.5">
-              Zona de Supervisión Asignada:{' '}
+              Zona de Supervisión:{' '}
               <span className="text-slate-200 font-bold uppercase">{perfilAsesor?.zona}</span>
             </p>
           </div>
-          <div className="text-xs bg-slate-900 border border-slate-800 px-4 py-2 rounded-xl text-slate-400 font-mono">
-            📅 Distribución de Hoy: <span className="text-emerald-400 font-bold">{hoy}</span>
+
+          <div className="bg-slate-900 border border-slate-800 px-4 py-2.5 rounded-xl flex items-center gap-3 w-full md:w-auto">
+            <label htmlFor="fecha-consulta" className="text-xs font-semibold text-slate-400 whitespace-nowrap">
+              📅 Fecha de Consulta:
+            </label>
+            <input
+              id="fecha-consulta"
+              type="date"
+              className="bg-slate-950 border border-slate-700 rounded-lg px-3 py-1 text-xs font-bold font-mono text-white outline-none focus:border-blue-500 cursor-pointer"
+              value={fechaSeleccionada}
+              onChange={(e) => setFechaSeleccionada(e.target.value)}
+            />
           </div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
           <div>
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300">
-              Auditoría Rápida de Destinatario
+              Buscador Histórico de Destinatarios
             </h2>
             <p className="text-xs text-slate-500">
-              Consulte el estado y la foto POD de un cliente específico ingresando su código de 6
-              dígitos.
+              Busca un cliente específico ingresando su código de 6 dígitos para el día{' '}
+              <span className="text-blue-400 font-bold font-mono">{fechaSeleccionada}</span>.
             </p>
           </div>
 
-          <form onSubmit={handleBuscarCodigo} className="flex gap-3 max-w-xl">
+          <form onSubmit={handleBuscarCodigoHistorico} className="flex gap-3 max-w-xl">
             <input
               type="text"
               maxLength={6}
-              placeholder="Ej: 102585"
+              placeholder="Ej: 103730"
               className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm font-mono text-white placeholder-slate-600 outline-none focus:border-blue-500"
               value={codigoBusqueda}
               onChange={(e) => setCodigoBusqueda(e.target.value)}
@@ -186,7 +175,7 @@ export default function DashboardAsesor() {
               disabled={loadingBusqueda}
               className="bg-blue-600 hover:bg-blue-700 px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition disabled:opacity-50"
             >
-              {loadingBusqueda ? 'Buscando...' : 'Buscar Cliente'}
+              {loadingBusqueda ? 'Buscando...' : 'Buscar'}
             </button>
           </form>
 
@@ -205,7 +194,7 @@ export default function DashboardAsesor() {
                       📍 {pedidoBuscado.direccion} ({pedidoBuscado.rutas.nombre_zona})
                     </p>
                   </div>
-                  <div className="flex items-center gap-3 self-stretch sm:self-auto justify-between sm:justify-start border-t border-slate-800 pt-3 sm:pt-0 sm:border-none">
+                  <div className="flex items-center gap-3 self-stretch sm:self-auto justify-between sm:justify-start">
                     <span
                       className={`px-2.5 py-1 rounded-full text-xs font-bold ${
                         pedidoBuscado.estado === 'Entregado'
@@ -224,14 +213,14 @@ export default function DashboardAsesor() {
                         📸 Ver Foto POD
                       </button>
                     ) : (
-                      <span className="text-xs italic text-slate-500">Sin foto aún</span>
+                      <span className="text-xs italic text-slate-500">Sin foto</span>
                     )}
                   </div>
                 </div>
               ) : (
                 <p className="text-xs text-red-400 italic">
-                  ❌ No se encontró ningún cliente con el código &quot;{codigoBusqueda}&quot;
-                  programado para el día de hoy.
+                  ❌ No se encontró ningún registro para el cliente &quot;{codigoBusqueda}&quot; en la
+                  fecha {fechaSeleccionada}.
                 </p>
               )}
             </div>
@@ -241,15 +230,16 @@ export default function DashboardAsesor() {
         <div className="space-y-4">
           <div>
             <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300">
-              Monitoreo General de la Zona: {perfilAsesor?.zona}
+              Registros de Zona: {perfilAsesor?.zona}
             </h2>
             <p className="text-xs text-slate-500">
-              Listado automático de todas las entregas asignadas a sus rutas de distribución hoy.
+              Mostrando la programación cargada para el día{' '}
+              <span className="text-slate-300 font-mono font-bold">{fechaSeleccionada}</span>.
             </p>
           </div>
 
           {loadingPedidos ? (
-            <p className="text-xs text-slate-500 italic">Actualizando registros de zona...</p>
+            <p className="text-xs text-slate-500 italic">Consultando archivos históricos...</p>
           ) : pedidosDelDia.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {pedidosDelDia.map((p) => (
@@ -278,11 +268,6 @@ export default function DashboardAsesor() {
                       Ruta: <span className="text-slate-300">{p.rutas.nombre_zona}</span> | Placa:{' '}
                       <span className="text-slate-300">{p.rutas.placa}</span>
                     </div>
-                    {p.notas && (
-                      <p className="text-[11px] bg-amber-500/10 text-amber-400 p-1.5 rounded border border-amber-500/10">
-                        ⚠️ {p.notas}
-                      </p>
-                    )}
                   </div>
 
                   {p.foto_url && (
@@ -292,7 +277,7 @@ export default function DashboardAsesor() {
                         onClick={() => setModalFoto(p.foto_url)}
                         className="text-xs font-bold text-blue-400 hover:text-blue-300 transition flex items-center gap-1"
                       >
-                        📸 Revisar Prueba POD →
+                        📸 Ver Evidencia POD →
                       </button>
                     </div>
                   )}
@@ -301,8 +286,8 @@ export default function DashboardAsesor() {
             </div>
           ) : (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-xs text-slate-500 italic">
-              ☕ No hay pedidos programados ni cargados por Logística para la zona &quot;
-              {perfilAsesor?.zona}&quot; el día de hoy.
+              📭 No hay registros logísticos cargados para la zona &quot;{perfilAsesor?.zona}&quot; en
+              la fecha seleccionada ({fechaSeleccionada}).
             </div>
           )}
         </div>
@@ -314,7 +299,7 @@ export default function DashboardAsesor() {
             <button
               type="button"
               onClick={() => setModalFoto(null)}
-              className="absolute right-4 top-4 bg-black/70 text-white font-bold h-8 w-8 rounded-full shadow-lg transition hover:bg-black"
+              className="absolute right-4 top-4 bg-black/70 text-white font-bold h-8 w-8 rounded-full"
             >
               ✕
             </button>

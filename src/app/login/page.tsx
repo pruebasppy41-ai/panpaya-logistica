@@ -19,78 +19,83 @@ export default function AuthAsesores() {
   const [mensaje, setMensaje] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const mensajeErrorConexion =
+    'No se pudo conectar con Supabase. Revise que NEXT_PUBLIC_SUPABASE_URL en Vercel sea exactamente https://eeikipgrdyctovblwzyk.supabase.co y haga Redeploy.';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMensaje(null);
 
-    if (isRegister && password !== confirmPassword) {
-      setMensaje({ tipo: 'error', texto: 'Las contraseñas no coinciden. Verifique e intente de nuevo.' });
-      setLoading(false);
-      return;
-    }
-
-    if (isRegister) {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: correo,
-        password: password,
-      });
-
-      if (authError) {
-        setMensaje({ tipo: 'error', texto: authError.message });
-        setLoading(false);
+    try {
+      if (isRegister && password !== confirmPassword) {
+        setMensaje({ tipo: 'error', texto: 'Las contraseñas no coinciden. Verifique e intente de nuevo.' });
         return;
       }
 
-      if (authData.user) {
-        const { error: tablaError } = await supabase.from('asesores').insert({
-          id: authData.user.id,
-          nombres_apellidos: nombre,
-          cedula: cedula.trim(),
-          codigo_opcional: codigo.trim() || null,
-          correo_electronico: correo.trim(),
-          zona: zona,
+      if (isRegister) {
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: correo,
+          password: password,
         });
 
-        if (tablaError) {
-          setMensaje({ tipo: 'error', texto: 'Error al guardar el perfil: ' + tablaError.message });
+        if (authError) {
+          setMensaje({ tipo: 'error', texto: authError.message });
+          return;
+        }
+
+        if (authData.user) {
+          const { error: tablaError } = await supabase.from('asesores').insert({
+            id: authData.user.id,
+            nombres_apellidos: nombre,
+            cedula: cedula.trim(),
+            codigo_opcional: codigo.trim() || null,
+            correo_electronico: correo.trim(),
+            zona: zona,
+          });
+
+          if (tablaError) {
+            setMensaje({ tipo: 'error', texto: 'Error al guardar el perfil: ' + tablaError.message });
+          } else {
+            setMensaje({ tipo: 'exito', texto: 'Asesor registrado con éxito. Ya puede iniciar sesión.' });
+            setIsRegister(false);
+            setNombre('');
+            setCedula('');
+            setCodigo('');
+            setCorreo('');
+            setZona('');
+            setPassword('');
+            setConfirmPassword('');
+          }
+        }
+      } else {
+        const { data: profile, error: profileError } = await supabase
+          .from('asesores')
+          .select('correo_electronico')
+          .eq('cedula', cedula.trim())
+          .maybeSingle();
+
+        if (profileError || !profile) {
+          setMensaje({ tipo: 'error', texto: 'La cédula digitada no está registrada como asesor.' });
+          return;
+        }
+
+        const { error: loginError } = await supabase.auth.signInWithPassword({
+          email: profile.correo_electronico,
+          password: password,
+        });
+
+        if (loginError) {
+          setMensaje({ tipo: 'error', texto: 'Contraseña incorrecta. Intente de nuevo.' });
         } else {
-          setMensaje({ tipo: 'exito', texto: 'Asesor registrado con éxito. Ya puede iniciar sesión.' });
-          setIsRegister(false);
-          setNombre('');
-          setCedula('');
-          setCodigo('');
-          setCorreo('');
-          setZona('');
-          setPassword('');
-          setConfirmPassword('');
+          router.push('/asesor');
         }
       }
-    } else {
-      const { data: profile, error: profileError } = await supabase
-        .from('asesores')
-        .select('correo_electronico')
-        .eq('cedula', cedula.trim())
-        .maybeSingle();
-
-      if (profileError || !profile) {
-        setMensaje({ tipo: 'error', texto: 'La cédula digitada no está registrada como asesor.' });
-        setLoading(false);
-        return;
-      }
-
-      const { error: loginError } = await supabase.auth.signInWithPassword({
-        email: profile.correo_electronico,
-        password: password,
-      });
-
-      if (loginError) {
-        setMensaje({ tipo: 'error', texto: 'Contraseña incorrecta. Intente de nuevo.' });
-      } else {
-        router.push('/asesor');
-      }
+    } catch {
+      setMensaje({ tipo: 'error', texto: mensajeErrorConexion });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
