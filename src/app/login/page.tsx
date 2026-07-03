@@ -139,27 +139,32 @@ export default function AuthAsesores() {
         setPassword('');
         setConfirmPassword('');
       } else {
-        const { data: profile, error: profileError } = await supabase
-          .from('asesores')
-          .select('correo_electronico')
-          .eq('cedula', cedula.trim())
-          .maybeSingle();
+        const res = await fetch('/api/login-cedula', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cedula: cedula.trim(), password, rolRequerido: 'asesor' }),
+        });
 
-        if (profileError || !profile) {
-          setMensaje({ tipo: 'error', texto: 'La cédula no está registrada como asesor.' });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          setMensaje({ tipo: 'error', texto: data.error ?? 'No se pudo iniciar sesión.' });
           return;
         }
 
-        const { error: loginError } = await supabase.auth.signInWithPassword({
-          email: profile.correo_electronico,
-          password,
-        });
+        if (data.session) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          });
 
-        if (loginError) {
-          setMensaje({ tipo: 'error', texto: 'Contraseña incorrecta. Intente de nuevo.' });
-        } else {
-          router.push('/asesor');
+          if (sessionError) {
+            setMensaje({ tipo: 'error', texto: 'Error al establecer la sesión. Intente de nuevo.' });
+            return;
+          }
         }
+
+        router.push('/asesor');
       }
     } catch {
       setMensaje({

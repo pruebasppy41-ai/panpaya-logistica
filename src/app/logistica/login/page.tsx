@@ -104,35 +104,36 @@ export default function AuthLogistica() {
         setPassword('');
         setConfirmPassword('');
       } else {
-        const { data: profile, error: profileError } = await supabase
-          .from('asesores')
-          .select('correo_electronico, rol')
-          .eq('cedula', cedula.trim())
-          .maybeSingle();
-
-        if (profileError || !profile) {
-          setMensaje({ tipo: 'error', texto: 'La cédula ingresada no se encuentra registrada.' });
-          return;
-        }
-
-        if (profile.rol !== 'administrador') {
-          setMensaje({
-            tipo: 'error',
-            texto: 'Acceso denegado: Esta identificación no cuenta con permisos administrativos.',
-          });
-          return;
-        }
-
-        const { error: loginError } = await supabase.auth.signInWithPassword({
-          email: profile.correo_electronico,
-          password,
+        const res = await fetch('/api/login-cedula', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cedula: cedula.trim(),
+            password,
+            rolRequerido: 'administrador',
+          }),
         });
 
-        if (loginError) {
-          setMensaje({ tipo: 'error', texto: 'Contraseña incorrecta. Intente de nuevo.' });
-        } else {
-          router.push('/logistica');
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          setMensaje({ tipo: 'error', texto: data.error ?? 'No se pudo iniciar sesión.' });
+          return;
         }
+
+        if (data.session) {
+          const { error: sessionError } = await supabase.auth.setSession({
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+          });
+
+          if (sessionError) {
+            setMensaje({ tipo: 'error', texto: 'Error al establecer la sesión. Intente de nuevo.' });
+            return;
+          }
+        }
+
+        router.push('/logistica');
       }
     } catch {
       setMensaje({
