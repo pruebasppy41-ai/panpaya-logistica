@@ -22,7 +22,7 @@ export default function CargaLogisticaProtegida() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        router.replace('/login-logistica');
+        router.replace('/logistica/login');
         return;
       }
 
