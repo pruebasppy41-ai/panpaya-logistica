@@ -50,11 +50,12 @@ export async function POST(request: Request) {
     if (rolRequerido) {
       const rolEfectivo = perfil.rol ?? 'asesor';
       if (rolEfectivo !== rolRequerido) {
-      const msg =
-        rolRequerido === 'administrador'
-          ? 'Acceso denegado: Esta cédula no tiene permisos administrativos.'
-          : 'Esta cédula pertenece a un administrador. Use el módulo de Logística para ingresar.';
-      return NextResponse.json({ error: msg }, { status: 403 });
+        const msg =
+          rolRequerido === 'administrador'
+            ? 'Acceso denegado: Esta cédula no tiene permisos administrativos.'
+            : 'Esta cédula pertenece a un administrador. Use el módulo de Logística para ingresar.';
+        return NextResponse.json({ error: msg }, { status: 403 });
+      }
     }
 
     const anonKey = resolveAnonKey();
