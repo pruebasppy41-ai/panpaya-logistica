@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import type QRCodeStyling from 'qr-code-styling';
 import type { QrDesignConfig } from '@/lib/qr/types';
-import { getMaskShape } from '@/lib/qr/shapes';
+import { getMaskShape, shapeMaskCss } from '@/lib/qr/shapes';
 import { QR_STICKERS } from '@/lib/qr/stickers';
 
 interface QrPreviewProps {
@@ -33,7 +33,7 @@ export default function QrPreview({ config, size = 320, onReady }: QrPreviewProp
         type: 'canvas' as const,
         shape: libraryShape,
         data: config.data || 'https://panpaya.com',
-        margin: 8,
+        margin: mask.path ? 4 : 8,
         image: config.logoUrl || undefined,
         qrOptions: {
           errorCorrectionLevel: 'H' as const,
@@ -41,7 +41,7 @@ export default function QrPreview({ config, size = 320, onReady }: QrPreviewProp
         imageOptions: {
           crossOrigin: 'anonymous',
           margin: 6,
-          imageSize: 0.35,
+          imageSize: 0.32,
           hideBackgroundDots: true,
         },
         dotsOptions: {
@@ -83,8 +83,19 @@ export default function QrPreview({ config, size = 320, onReady }: QrPreviewProp
 
   const mask = getMaskShape(config.maskShapeId);
   const sticker = QR_STICKERS.find((s) => s.id === config.stickerId);
-  const clipStyle =
-    mask.clipPath !== 'none' ? { clipPath: mask.clipPath, WebkitClipPath: mask.clipPath } : {};
+  const maskImage = shapeMaskCss(mask.path);
+  const maskStyle = maskImage
+    ? {
+        WebkitMaskImage: maskImage,
+        maskImage: maskImage,
+        WebkitMaskSize: '100% 100%',
+        maskSize: '100% 100%',
+        WebkitMaskRepeat: 'no-repeat',
+        maskRepeat: 'no-repeat',
+        WebkitMaskPosition: 'center',
+        maskPosition: 'center',
+      }
+    : {};
 
   return (
     <div className="relative flex items-center justify-center">
@@ -98,22 +109,28 @@ export default function QrPreview({ config, size = 320, onReady }: QrPreviewProp
       )}
 
       <div
-        className={`relative overflow-hidden ${config.effect3d ? 'qr-effect-3d' : ''}`}
+        className={`relative ${config.effect3d ? 'qr-effect-3d' : ''}`}
         style={{
           width: size,
           height: size,
-          ...clipStyle,
+          ...maskStyle,
         }}
       >
         <div ref={containerRef} className="h-full w-full" />
       </div>
 
       {sticker && sticker.id !== 'none' && (
-        <div
-          className="pointer-events-none absolute -bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-3 py-1 text-2xl shadow-md"
-          aria-hidden
-        >
-          {sticker.emoji}
+        <div className="pointer-events-none absolute -bottom-3 left-1/2 z-10 -translate-x-1/2">
+          <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 shadow-md">
+            <span className="text-lg leading-none" aria-hidden>
+              {sticker.emoji}
+            </span>
+            {sticker.cta && (
+              <span className="text-[10px] font-bold tracking-wide text-slate-700">
+                {sticker.cta}
+              </span>
+            )}
+          </div>
         </div>
       )}
     </div>

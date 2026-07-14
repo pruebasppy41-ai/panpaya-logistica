@@ -4,14 +4,20 @@ import { useCallback, useRef, useState } from 'react';
 import type QRCodeStyling from 'qr-code-styling';
 import VolverInicio from '@/components/VolverInicio';
 import QrPreview from '@/components/qr/QrPreview';
+import ShapeThumb from '@/components/qr/ShapeThumb';
+import TemplateThumb from '@/components/qr/TemplateThumb';
 import { loadDefaultDesign, saveDefaultDesign } from '@/lib/qr/defaults';
-import { QR_MASK_SHAPES } from '@/lib/qr/shapes';
+import { QR_MASK_SHAPES, shapesByCategory } from '@/lib/qr/shapes';
 import { QR_STICKERS } from '@/lib/qr/stickers';
 import { QR_TEMPLATES } from '@/lib/qr/templates';
 import {
   DEFAULT_QR_CONFIG,
+  SHAPE_CATEGORY_LABELS,
+  TEMPLATE_CATEGORY_LABELS,
   type QrDesignConfig,
+  type QrShapeCategory,
   type QrTab,
+  type QrTemplateCategory,
 } from '@/lib/qr/types';
 
 const TABS: { id: QrTab; label: string }[] = [
@@ -50,6 +56,11 @@ export default function QrDesigner() {
   const [config, setConfig] = useState<QrDesignConfig>(DEFAULT_QR_CONFIG);
   const [activeTab, setActiveTab] = useState<QrTab>('formas-qr');
   const [showMoreTemplates, setShowMoreTemplates] = useState(false);
+  const [shapeCategory, setShapeCategory] = useState<QrShapeCategory | 'todas'>('todas');
+  const [templateCategory, setTemplateCategory] = useState<QrTemplateCategory | 'todas'>(
+    'todas'
+  );
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const qrInstanceRef = useRef<QRCodeStyling | null>(null);
 
   const updateConfig = useCallback((patch: Partial<QrDesignConfig>) => {
@@ -59,6 +70,7 @@ export default function QrDesigner() {
   const applyTemplate = (templateId: string) => {
     const template = QR_TEMPLATES.find((t) => t.id === templateId);
     if (template) {
+      setSelectedTemplateId(templateId);
       setConfig((prev) => ({ ...prev, ...template.config }));
     }
   };
@@ -66,6 +78,7 @@ export default function QrDesigner() {
   const applyMask = (shapeId: string) => {
     const shape = QR_MASK_SHAPES.find((s) => s.id === shapeId);
     if (!shape) return;
+    setSelectedTemplateId(null);
     updateConfig({
       maskShapeId: shapeId,
       libraryShape: shape.libraryShape ?? 'square',
@@ -90,7 +103,10 @@ export default function QrDesigner() {
     qrInstanceRef.current?.download({ name: 'codigo-qr-panpaya', extension: 'png' });
   };
 
-  const handleReset = () => setConfig(DEFAULT_QR_CONFIG);
+  const handleReset = () => {
+    setSelectedTemplateId(null);
+    setConfig(DEFAULT_QR_CONFIG);
+  };
 
   const handleSaveDefault = () => {
     saveDefaultDesign(config);
@@ -101,57 +117,131 @@ export default function QrDesigner() {
     if (saved) setConfig((prev) => ({ ...prev, ...saved }));
   };
 
-  const visibleTemplates = showMoreTemplates ? QR_TEMPLATES : QR_TEMPLATES.slice(0, 8);
+  const filteredShapes = shapesByCategory(shapeCategory);
+  const filteredTemplates =
+    templateCategory === 'todas'
+      ? QR_TEMPLATES
+      : QR_TEMPLATES.filter((t) => t.category === templateCategory);
+  const visibleTemplates = showMoreTemplates
+    ? filteredTemplates
+    : filteredTemplates.slice(0, 12);
 
   const renderTabContent = () => {
     switch (activeTab) {
       case 'formas-qr':
         return (
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
-            {QR_MASK_SHAPES.map((shape) => (
+          <div className="space-y-3">
+            <div className="flex flex-wrap gap-1.5">
               <button
-                key={shape.id}
                 type="button"
-                onClick={() => applyMask(shape.id)}
-                className={`flex aspect-square flex-col items-center justify-center rounded-lg border-2 p-2 text-xl transition hover:border-blue-400 ${
-                  config.maskShapeId === shape.id
-                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                    : 'border-slate-200 bg-white'
+                onClick={() => setShapeCategory('todas')}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
+                  shapeCategory === 'todas'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
-                title={shape.label}
               >
-                <span>{shape.icon}</span>
-                <span className="mt-1 text-[10px] font-medium text-slate-600">{shape.label}</span>
+                Todas ({QR_MASK_SHAPES.length})
               </button>
-            ))}
+              {(Object.keys(SHAPE_CATEGORY_LABELS) as QrShapeCategory[]).map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setShapeCategory(cat)}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
+                    shapeCategory === cat
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {SHAPE_CATEGORY_LABELS[cat]}
+                </button>
+              ))}
+            </div>
+            <div className="grid max-h-[26rem] grid-cols-4 gap-2 overflow-y-auto pr-1 sm:grid-cols-5">
+              {filteredShapes.map((shape) => (
+                <button
+                  key={shape.id}
+                  type="button"
+                  onClick={() => applyMask(shape.id)}
+                  className={`flex aspect-square flex-col items-center justify-center rounded-xl border-2 p-1.5 transition hover:border-blue-400 ${
+                    config.maskShapeId === shape.id
+                      ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                      : 'border-slate-200 bg-white'
+                  }`}
+                  title={shape.label}
+                >
+                  <ShapeThumb
+                    shapeId={shape.id}
+                    color={config.maskShapeId === shape.id ? config.dotColor : '#475569'}
+                    size={44}
+                  />
+                  <span className="mt-0.5 line-clamp-1 text-[9px] font-medium text-slate-600">
+                    {shape.label}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         );
 
       case 'predisennado':
         return (
-          <div>
-            <h3 className="mb-3 text-sm font-bold text-slate-800">Plantillas Predefinidas</h3>
-            <div className="grid grid-cols-4 gap-2 sm:grid-cols-4">
-              {visibleTemplates.map((tpl) => (
+          <div className="space-y-3">
+            <h3 className="text-sm font-bold text-slate-800">Plantillas Predefinidas</h3>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setTemplateCategory('todas');
+                  setShowMoreTemplates(false);
+                }}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
+                  templateCategory === 'todas'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Todas ({QR_TEMPLATES.length})
+              </button>
+              {(Object.keys(TEMPLATE_CATEGORY_LABELS) as QrTemplateCategory[]).map((cat) => (
                 <button
-                  key={tpl.id}
+                  key={cat}
                   type="button"
-                  onClick={() => applyTemplate(tpl.id)}
-                  className="flex aspect-square flex-col items-center justify-center rounded-lg border border-slate-200 bg-white p-2 text-2xl transition hover:border-blue-400 hover:shadow-md"
-                  title={tpl.label}
+                  onClick={() => {
+                    setTemplateCategory(cat);
+                    setShowMoreTemplates(false);
+                  }}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
+                    templateCategory === cat
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
                 >
-                  {tpl.preview}
-                  <span className="mt-1 text-[10px] text-slate-500">{tpl.label}</span>
+                  {TEMPLATE_CATEGORY_LABELS[cat]}
                 </button>
               ))}
             </div>
-            {QR_TEMPLATES.length > 8 && (
+            <div className="grid max-h-[26rem] grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
+              {visibleTemplates.map((tpl) => (
+                <TemplateThumb
+                  key={tpl.id}
+                  config={tpl.config}
+                  label={tpl.label}
+                  selected={selectedTemplateId === tpl.id}
+                  onClick={() => applyTemplate(tpl.id)}
+                />
+              ))}
+            </div>
+            {filteredTemplates.length > 12 && (
               <button
                 type="button"
                 onClick={() => setShowMoreTemplates((v) => !v)}
-                className="mt-3 w-full text-center text-sm text-blue-600 hover:underline"
+                className="w-full text-center text-sm font-medium text-blue-600 hover:underline"
               >
-                {showMoreTemplates ? 'Ver menos' : 'Ver más'}
+                {showMoreTemplates
+                  ? 'Ver menos'
+                  : `Ver más (${filteredTemplates.length - 12})`}
               </button>
             )}
           </div>

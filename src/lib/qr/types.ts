@@ -19,11 +19,27 @@ export type QrCornerDotType = 'dot' | 'square' | QrDotType;
 export type QrCornerSquareType = 'dot' | 'square' | 'extra-rounded' | QrDotType;
 export type QrLibraryShape = 'square' | 'circle';
 
+export type QrShapeCategory =
+  | 'basicas'
+  | 'objetos'
+  | 'comida'
+  | 'naturaleza'
+  | 'simbolos';
+
+export type QrTemplateCategory =
+  | 'marca'
+  | 'comida'
+  | 'eventos'
+  | 'logistica'
+  | 'amor'
+  | 'negocio';
+
 export interface QrMaskShape {
   id: string;
   label: string;
-  icon: string;
-  clipPath: string;
+  category: QrShapeCategory;
+  /** SVG path in viewBox 0 0 100 100 */
+  path: string | null;
   libraryShape?: QrLibraryShape;
 }
 
@@ -31,12 +47,13 @@ export interface QrSticker {
   id: string;
   label: string;
   emoji: string;
+  cta?: string;
 }
 
 export interface QrTemplate {
   id: string;
   label: string;
-  preview: string;
+  category: QrTemplateCategory;
   config: Partial<QrDesignConfig>;
 }
 
@@ -71,3 +88,20 @@ export const DEFAULT_QR_CONFIG: QrDesignConfig = {
 };
 
 export const STORAGE_KEY = 'panpaya-qr-default-design';
+
+export const SHAPE_CATEGORY_LABELS: Record<QrShapeCategory, string> = {
+  basicas: 'Básicas',
+  objetos: 'Objetos',
+  comida: 'Comida',
+  naturaleza: 'Naturaleza',
+  simbolos: 'Símbolos',
+};
+
+export const TEMPLATE_CATEGORY_LABELS: Record<QrTemplateCategory, string> = {
+  marca: 'Marca',
+  comida: 'Panadería',
+  eventos: 'Eventos',
+  logistica: 'Logística',
+  amor: 'Amor',
+  negocio: 'Negocio',
+};
