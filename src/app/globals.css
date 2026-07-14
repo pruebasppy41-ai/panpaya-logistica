@@ -54,3 +54,8 @@ button {
 .animate-fade-in {
   animation: fade-in 0.35s ease-out;
 }
+
+.qr-effect-3d {
+  filter: drop-shadow(4px 6px 8px rgba(0, 0, 0, 0.35));
+  transform: perspective(400px) rotateX(4deg) rotateY(-4deg);
+}
